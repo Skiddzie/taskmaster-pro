@@ -13,6 +13,7 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
+  audiitTask(taskLi);
 
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
@@ -42,6 +43,21 @@ var loadTasks = function() {
 
 var saveTasks = function() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
+};
+
+var audiitTask = function(taskEl) {
+  var date = $(taskEl).find("span").text().trim();
+
+  var time = moment(date, "L").set("hour", 17);
+
+  $(taskEl).removeClass("list-group-item-warning list-group-item-danger");
+
+  if (moment().isAfter(time)) {
+    $(taskEl).addClass("list-group-item-danger");
+  }
+  else if (Math.abs(moment().diff(time, "days")) <= 2) {
+    $(taskEl).addClass("list-group-item-warning");
+  }
 };
 
 $(".list-group").on("click", "p", function() {
@@ -92,14 +108,20 @@ $(".list-group").on("click", "span", function() {
 
   $(this).replaceWith(dateInput);
 
+  dateInput.datepicker({
+    minDate: 1,
+    onClose: function() {
+      $(this).trigger("change");
+    }
+  });
+
   dateInput.trigger("focus");
 });
 
-$(".list-group").on("blur", "input[type='text']", function()
+$(".list-group").on("change", "input[type='text']", function()
 {
   var date = $(this)
-    .val()
-    .trim();
+    .val();
   
   var status = $(this)
     .closest(".list-group")
@@ -118,6 +140,9 @@ $(".list-group").on("blur", "input[type='text']", function()
     .text(date);
 
   $(this).replaceWith(taskSpan);
+
+  //pass task's list element into auditTask() to check new due date
+  audiitTask($(taskSpan).closest(".list-group-item"));
 });
 
 $(".card .list-group").sortable({
@@ -185,7 +210,9 @@ $("#trash").droppable({
     console.log("out");
   }
 });
-
+$("#modalDueDate").datepicker({
+  minDate: 1
+});
 // modal was triggered
 $("#task-form-modal").on("show.bs.modal", function() {
   // clear values
